@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Şefin Asistanı: Mutfak Operasyonu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Nunito:wght@400;600;800&family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --color-navy: #1F2937;
+            --color-wood: #D97706;
+            --color-fire: #EF4444;
+            --color-white: #FFFFFF;
+            --color-green: #10B981;
+            --color-mustard: #F59E0B;
+            --bg-base: #F3F4F6;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--bg-base);
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        /* Kitchen Tile Pattern */
+        .bg-tile {
+            background-image: 
+                linear-gradient(to right, rgba(31, 41, 55, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(31, 41, 55, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        /* Adisyon (Ticket) Font */
+        .font-ticket {
+            font-family: 'Caveat', cursive;
+            font-size: 1.5rem;
+            line-height: 1.4;
+        }
+
+        /* LED Screen Font */
+        .font-led {
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        /* Animations */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px); }
+            40% { transform: translateX(8px); }
+            60% { transform: translateX(-8px); }
+            80% { transform: translateX(8px); }
+        }
+        .animate-shake {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        @keyframes bounce-subtle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        .animate-bounce-subtle {
+            animation: bounce-subtle 1.5s infinite ease-in-out;
+        }
+        
+        @keyframes pop-in {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop-in {
+            animation: pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* Custom Scrollbar for Ticket */
+        .ticket-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .ticket-scroll::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        /* UI Enhancements */
+        .wood-panel {
+            background-color: var(--color-wood);
+            border: 4px solid #b45309;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.3), 5px 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .ticket-paper {
+            background-color: var(--color-white);
+            box-shadow: 2px 4px 10px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        .ticket-paper::before {
+            content: "";
+            position: absolute;
+            top: -10px; left: 0; right: 0;
+            height: 10px;
+            background: repeating-linear-gradient(45deg, transparent, transparent 10px, #e2e8f0 10px, #e2e8f0 20px);
+        }
+    </style>
+</head>
+<body class="bg-tile min-h-screen flex flex-col text-gray-800">
+
+    <!-- HUD (Top Navigation) -->
+    <header class="bg-[#1F2937] text-white p-4 shadow-md sticky top-0 z-50 flex justify-between items-center border-b-4 border-[#D97706]">
+        <div class="flex items-center space-x-3">
+            <svg class="w-8 h-8 text-[#F59E0B]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <div>
+                <h1 class="font-bold text-xl tracking-wider uppercase text-white">Mutfak Modu</h1>
+                <p class="text-xs text-gray-300" id="level-display">Seviye: 1 - Hazırlık</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-6">
+            <div class="text-center">
+                <p class="text-xs text-gray-400 uppercase tracking-widest">Siparişler</p>
+                <p class="font-bold text-lg"><span id="completed-orders">0</span> / 6</p>
+            </div>
+            <div class="text-center">
+                <p class="text-xs text-gray-400 uppercase tracking-widest">Michelin Yıldızı</p>
+                <div class="flex items-center space-x-1 text-[#F59E0B]" id="star-container">
+                    <!-- Stars injected via JS -->
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Game Area -->
+    <main class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto w-full">
+        
+        <!-- Left Column: Adisyon (Ticket) -->
+        <section class="flex-1 flex flex-col max-w-sm w-full mx-auto">
+            <div class="ticket-paper p-6 flex-grow rounded-b-md flex flex-col">
+                <div class="text-center border-b-2 border-dashed border-gray-300 pb-3 mb-4">
+                    <h2 class="font-bold text-2xl text-[#1F2937] uppercase tracking-widest">Adisyon</h2>
+                    <p class="text-sm text-gray-500 font-mono">Masa: <span id="table-number">1</span> | Tarih: Bugün</p>
+                </div>
+                
+                <div class="ticket-scroll overflow-y-auto flex-grow pr-2">
+                    <p id="problem-text" class="font-ticket text-[#1F2937]"></p>
+                </div>
+
+                <!-- Chef's Feedback Area -->
+                <div id="chef-feedback" class="mt-6 p-4 rounded-xl bg-gray-50 border-2 border-transparent transition-all duration-300 hidden">
+                    <div class="flex items-start space-x-3">
+                        <div class="text-3xl">👨‍🍳</div>
+                        <div>
+                            <h4 class="font-bold text-sm uppercase tracking-wide" id="chef-title">Şefin Notu</h4>
+                            <p class="text-sm mt-1" id="chef-message"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Center Column: Çalışma Tezgâhı (Workspace/Converter) -->
+        <section class="flex-1 flex flex-col">
+            <div class="bg-white rounded-xl shadow-lg border-2 border-gray-200 p-5 flex flex-col h-full relative overflow-hidden">
+                <!-- Watermark -->
+                <div class="absolute -right-10 -bottom-10 opacity-5 pointer-events-none">
+                    <svg class="w-64 h-64" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+                </div>
+
+                <div class="mb-4">
+                    <h2 class="font-bold text-xl text-[#1F2937] flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-[#D97706]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        Karalama & Dönüşüm
+                    </h2>
+                    <p class="text-sm text-gray-500">Değerleri birbirine dönüştürerek ipucu alabilirsin.</p>
+                </div>
+
+                <div class="space-y-4 z-10">
+                    <!-- Fraction Input -->
+                    <div class="flex items-center space-x-2">
+                        <div class="w-20 text-center font-bold text-gray-700 bg-gray-100 py-2 rounded">Kesir</div>
+                        <input type="text" id="conv-frac" placeholder="Örn: 1/4" class="flex-1 border-2 border-gray-300 rounded px-3 py-2 text-lg focus:outline-none focus:border-[#D97706]">
+                        <button onclick="convert('frac')" class="bg-[#1F2937] text-white px-4 py-2 rounded hover:bg-gray-700 transition">Çevir</button>
+                    </div>
+                    
+                    <!-- Decimal Input -->
+                    <div class="flex items-center space-x-2">
+                        <div class="w-20 text-center font-bold text-gray-700 bg-gray-100 py-2 rounded">Ondalık</div>
+                        <input type="text" id="conv-dec" placeholder="Örn: 0,25" class="flex-1 border-2 border-gray-300 rounded px-3 py-2 text-lg focus:outline-none focus:border-[#D97706]">
+                        <button onclick="convert('dec')" class="bg-[#1F2937] text-white px-4 py-2 rounded hover:bg-gray-700 transition">Çevir</button>
+                    </div>
+
+                    <!-- Percent Input -->
+                    <div class="flex items-center space-x-2">
+                        <div class="w-20 text-center font-bold text-gray-700 bg-gray-100 py-2 rounded">Yüzde</div>
+                        <div class="relative flex-1">
+                            <span class="absolute left-3 top-2.5 text-gray-500 font-bold">%</span>
+                            <input type="text" id="conv-perc" placeholder="25" class="w-full border-2 border-gray-300 rounded pl-8 pr-3 py-2 text-lg focus:outline-none focus:border-[#D97706]">
+                        </div>
+                        <button onclick="convert('perc')" class="bg-[#1F2937] text-white px-4 py-2 rounded hover:bg-gray-700 transition">Çevir</button>
+                    </div>
+                </div>
+
+                <div id="conv-error" class="text-[#EF4444] text-sm mt-3 font-semibold hidden">Geçersiz bir değer girdiniz. Lütfen kontrol edin.</div>
+            </div>
+        </section>
+
+        <!-- Right Column: Teslimat (Scale/Input) -->
+        <section class="flex-1 max-w-sm mx-auto w-full">
+            <div class="wood-panel rounded-xl p-4 flex flex-col h-full relative">
+                <!-- Scale Top Metal -->
+                <div class="bg-gray-300 h-6 w-3/4 mx-auto rounded-t-lg border-b-4 border-gray-400"></div>
+                
+                <!-- Scale Body -->
+                <div class="bg-gray-100 rounded-lg flex-grow p-4 shadow-inner flex flex-col relative">
+                    <h3 class="text-center text-gray-500 font-bold text-sm tracking-widest mb-2 uppercase">Dijital Tartı / Kasa</h3>
+                    
+                    <!-- Digital Display -->
+                    <div id="scale-display" class="bg-black text-[#10B981] font-led text-5xl text-right p-4 rounded-lg shadow-inner mb-6 min-h-[80px] flex items-center justify-end overflow-hidden border-4 border-gray-800 transition-colors duration-300">
+                        <span id="scale-value">0</span>
+                    </div>
+
+                    <!-- Numpad -->
+                    <div class="grid grid-cols-3 gap-3 mb-6 flex-grow">
+                        <button class="numpad-btn bg-white border-2 border-gray-300 text-xl font-bold py-3 rounded-lg shadow hover:bg-gray-100 active:scale-95 transition" onclick="inputDigit('1')">1</button>
+                        <button class="numpad-btn bg-white border-2 border-gray-300 text-xl font-bold py-3 rounded-lg shadow hover:bg-gray-100 active:scale-95 transition" onclick="inputDigit('2')">2</button>
+                        <button class="numpad-btn bg-white border-2 border-gray-300 text-xl font-bold py-3 rounded-lg shadow hover:bg-gray-100 active:scale-95 transition" onclick="inputDigit('3')">3</button>
+                        <button class="numpad-btn bg-white border-2 border-gray-300 text-xl font-bold py-3 rounded-lg shadow hover:bg-gray-100 active:scale-95 transition" onclick="inputDigit('4')">4</button>
+                        <button class="numpad-btn bg-white border-2 border-gray-300 text-xl font-bold py-3 rounded-lg shadow hover:bg-gray-100 active:scale-95 transition" onclick="inputDigit('5')">5</button>
+                        <button class="numpad-btn bg-white border-2 border-gray-300 text-xl font-bold py-3 rounded-lg shadow hover:bg-gray-100 active:scale-95 transition" onclick="inputDigit('6')">6</button>
+                        <button class="numpad-btn bg-white border-2 border-gray-300 text-xl font-bold py-3 rounded-lg shadow hover:bg-gray-100 active:scale-95 transition" onclick="inputDigit('7')">7</button>
+                        <button class="numpad-btn bg-white border-2 border-gray-300 text-xl font-bold py-3 rounded-lg shadow hover:bg-gray-100 active:scale-95 transition" onclick="inputDigit('8')">8</button>
+                        <button class="numpad-btn bg-white border-2 border-gray-300 text-xl font-bold py-3 rounded-lg shadow hover:bg-gray-100 active:scale-95 transition" onclick="inputDigit('9')">9</button>
+                        <button class="numpad-btn bg-gray-200 border-2 border-gray-300 text-xl font-bold py-3 rounded-lg shadow hover:bg-gray-300 active:scale-95 transition" onclick="inputDigit(',')">,</button>
+                        <button class="numpad-btn bg-white border-2 border-gray-300 text-xl font-bold py-3 rounded-lg shadow hover:bg-gray-100 active:scale-95 transition" onclick="inputDigit('0')">0</button>
+                        <button class="numpad-btn bg-[#EF4444] text-white border-2 border-red-600 text-xl font-bold py-3 rounded-lg shadow hover:bg-red-600 active:scale-95 transition" onclick="clearInput()">C</button>
+                    </div>
+
+                    <!-- Actions -->
+                    <button id="submit-btn" onclick="submitAnswer()" class="bg-[#1F2937] hover:bg-gray-800 text-white font-bold text-xl py-4 rounded-xl shadow-lg border-b-4 border-gray-900 active:border-b-0 active:translate-y-1 transition-all uppercase tracking-wide">
+                        Şefe Sun
+                    </button>
+                    
+                    <button id="next-btn" onclick="nextProblem()" class="hidden bg-[#10B981] hover:bg-green-600 text-white font-bold text-xl py-4 rounded-xl shadow-lg border-b-4 border-green-800 active:border-b-0 active:translate-y-1 transition-all uppercase tracking-wide animate-bounce-subtle mt-2">
+                        Sıradaki Siparişe Geç ➔
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- End Game Modal -->
+    <div id="end-modal" class="fixed inset-0 bg-black bg-opacity-70 z-[100] hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden animate-pop-in border-4 border-[#D97706]">
+            <div class="bg-[#1F2937] p-6 text-center">
+                <h2 class="text-3xl font-bold text-white uppercase tracking-widest">Günün Menüsü Analizi</h2>
+            </div>
+            <div class="p-8 text-center">
+                <div class="text-6xl mb-4">🏆</div>
+                <h3 class="text-2xl font-bold text-[#1F2937] mb-2">Usta Şef Yardımcısı Sertifikası</h3>
+                <p class="text-gray-600 mb-6">Tüm siparişleri başarıyla tamamladın! Kesir, ondalık ve yüzde dönüşümlerinde harika bir mutfak operasyonu yönettin.</p>
+                
+                <div class="bg-gray-100 rounded-xl p-4 mb-6 text-left">
+                    <h4 class="font-bold text-gray-700 mb-3 border-b pb-2">Kazanım Özeti</h4>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li class="flex items-center"><svg class="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg> Temel dönüşümler ve parça hesabı</li>
+                        <li class="flex items-center"><svg class="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg> Kalan miktarlar üzerinden çok adımlı problemler</li>
+                        <li class="flex items-center"><svg class="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg> Bütçe, fiyat ve ondalık sayılarla para hesaplamaları</li>
+                    </ul>
+                </div>
+
+                <div class="flex justify-center space-x-2 text-[#F59E0B] text-4xl mb-6">
+                    ★ ★ ★ ★ ★ ★
+                </div>
+
+                <button onclick="location.reload()" class="bg-[#1F2937] hover:bg-gray-800 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform active:scale-95 uppercase tracking-wide">
+                    Yeni Mesaiye Başla
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA & STATE ---
+        const problems = [
+            {
+                levelText: "Seviye: 1 - Hazırlık",
+                text: "Şefin özel sosu için 5 litrelik sütün <span class='text-[#3B82F6] font-bold'>0,4'üne</span> ihtiyacımız var. Kaç litre süt ölçmelisin?",
+                answer: 2,
+                hint: "5'in 0,4'ünü bulmak için 5 ile 0,4'ü çarpmalısın veya 0,4'ü 4/10 olarak yazıp sadeleştirerek hesaplamalısın."
+            },
+            {
+                levelText: "Seviye: 1 - Hazırlık",
+                text: "Pastanın hamuru için tezgâhtaki 400 gram unun <span class='text-[#EF4444] font-bold'>%75'ini</span> karışıma ekle. Karışıma kaç gram un eklemelisin?",
+                answer: 300,
+                hint: "%75, kesir olarak 3/4 demektir. 400'ü 4'e bölüp 3 ile çarparak bütünden parçayı bulabilirsin."
+            },
+            {
+                levelText: "Seviye: 2 - Kalan Üzerinden İşlem",
+                text: "Depodaki 120 yumurtanın <span class='text-[#10B981] font-bold'>1/6'sı</span> sabah kahvaltısında kullanıldı. Kalan yumurtaların <span class='text-[#EF4444] font-bold'>%20'si</span> ile omlet yapılacak. Omlet için kaç yumurta lazım?",
+                answer: 20,
+                hint: "Adım 1: 120'nin 1/6'sını bul (20) ve bütünden çıkarak kalanı bul (100).<br>Adım 2: Kalanın (100) %20'sini hesapla."
+            },
+            {
+                levelText: "Seviye: 2 - Kalan Üzerinden İşlem",
+                text: "500 gram taze çileğin <span class='text-[#3B82F6] font-bold'>0,3'ü</span> pastanın kremasına, kalanın <span class='text-[#10B981] font-bold'>1/2'si</span> pastanın süslemesine ayrıldı. Süsleme için kaç gram çilek ayrıldı?",
+                answer: 175,
+                hint: "Önce 500'ün 0,3'ünü hesapla (150) ve bütünden çıkar. Daha sonra elinde kalan miktarın yarısını (1/2) bulmalısın."
+            },
+            {
+                levelText: "Seviye: 3 - Bütçe & Fiyat",
+                text: "Toptancıdan alınan <span class='text-[#1F2937] font-bold'>850 TL'lik</span> et siparişine <span class='text-[#EF4444] font-bold'>%10</span> indirim uygulandı. Ancak faturaya <span class='text-[#3B82F6] font-bold'>15,5 TL</span> teslimat ücreti eklendi. Toplam kaç TL ödenmeli?",
+                answer: 780.5,
+                hint: "850'nin %10'unu bulup indirim olarak toplamdan düş. Daha sonra bulduğun sonuca 15,5 TL teslimat ücretini eklemeyi unutma."
+            },
+            {
+                levelText: "Seviye: 3 - Bütçe & Fiyat",
+                text: "Pazardan kilosu <span class='text-[#3B82F6] font-bold'>12,5 TL</span> olan domateslerden 4 kg, kilosu <span class='text-[#3B82F6] font-bold'>8,4 TL</span> olan soğanlardan 2,5 kg aldın. Kasaya 100 TL verdin. Kaç TL para üstü almalısın?",
+                answer: 29,
+                hint: "Domatesin tutarını (12,5 x 4) ve soğanın tutarını (8,4 x 2,5) ayrı ayrı hesapla ve topla. Sonra 100 TL'den bu toplam tutarı çıkar."
+            }
+        ];
+
+        let currentProblemIndex = 0;
+        let scaleInputValue = "";
+        let michelinStars = 0;
+        let isProblemCompleted = false;
+
+        // --- DOM ELEMENTS ---
+        const problemTextEl = document.getElementById('problem-text');
+        const levelDisplayEl = document.getElementById('level-display');
+        const tableNumberEl = document.getElementById('table-number');
+        const completedOrdersEl = document.getElementById('completed-orders');
+        const starContainerEl = document.getElementById('star-container');
+        const scaleValueEl = document.getElementById('scale-value');
+        const scaleDisplayContainer = document.getElementById('scale-display');
+        
+        const chefFeedbackEl = document.getElementById('chef-feedback');
+        const chefTitleEl = document.getElementById('chef-title');
+        const chefMessageEl = document.getElementById('chef-message');
+        
+        const submitBtn = document.getElementById('submit-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const numpadBtns = document.querySelectorAll('.numpad-btn');
+
+        // --- INITIALIZATION ---
+        function initGame() {
+            renderStars();
+            loadProblem();
+        }
+
+        function loadProblem() {
+            if (currentProblemIndex >= problems.length) {
+                showEndModal();
+                return;
+            }
+
+            const prob = problems[currentProblemIndex];
+            problemTextEl.innerHTML = prob.text;
+            levelDisplayEl.textContent = prob.levelText;
+            tableNumberEl.textContent = currentProblemIndex + 1;
+            
+            // Reset state
+            scaleInputValue = "";
+            updateScaleDisplay();
+            isProblemCompleted = false;
+            
+            // Reset UI
+            hideChefFeedback();
+            scaleDisplayContainer.classList.remove('bg-[#10B981]', 'text-white');
+            scaleDisplayContainer.classList.add('bg-black', 'text-[#10B981]');
+            
+            submitBtn.classList.remove('hidden');
+            nextBtn.classList.add('hidden');
+            
+            // Enable numpad
+            numpadBtns.forEach(btn => btn.removeAttribute('disabled'));
+
+            // Clear converters
+            document.getElementById('conv-frac').value = "";
+            document.getElementById('conv-dec').value = "";
+            document.getElementById('conv-perc').value = "";
+            document.getElementById('conv-error').classList.add('hidden');
+        }
+
+        // --- NUMPAD & SCALE LOGIC ---
+        function inputDigit(digit) {
+            if (isProblemCompleted) return;
+            
+            if (digit === ',') {
+                if (scaleInputValue.includes(',')) return; // Prevent multiple commas
+                if (scaleInputValue === "") scaleInputValue = "0"; // Handle comma at start
+            }
+            
+            if (scaleInputValue === "0" && digit !== ',') {
+                scaleInputValue = digit; // Replace leading zero
+            } else {
+                // Max length limit
+                if (scaleInputValue.length < 8) {
+                    scaleInputValue += digit;
+                }
+            }
+            updateScaleDisplay();
+        }
+
+        function clearInput() {
+            if (isProblemCompleted) return;
+            scaleInputValue = "";
+            updateScaleDisplay();
+        }
+
+        function updateScaleDisplay() {
+            scaleValueEl.textContent = scaleInputValue === "" ? "0" : scaleInputValue;
+        }
+
+        // --- VALIDATION & FEEDBACK ---
+        function submitAnswer() {
+            if (scaleInputValue === "" || isProblemCompleted) return;
+
+            const prob = problems[currentProblemIndex];
+            // Convert comma to dot for parsing
+            const numericValue = parseFloat(scaleInputValue.replace(',', '.'));
+
+            if (numericValue === prob.answer) {
+                handleSuccess();
+            } else {
+                handleError(prob.hint);
+            }
+        }
+
+        function handleSuccess() {
+            isProblemCompleted = true;
+            
+            // UI Updates for Success
+            scaleDisplayContainer.classList.remove('bg-black', 'text-[#10B981]');
+            scaleDisplayContainer.classList.add('bg-[#10B981]', 'text-white');
+            
+            showChefFeedback("Harika İş, Şefim!", "Hesaplama tamamen doğru. Müşteri çok memnun kalacak!", "success");
+            
+            michelinStars++;
+            renderStars();
+            completedOrdersEl.textContent = currentProblemIndex + 1;
+
+            submitBtn.classList.add('hidden');
+            nextBtn.classList.remove('hidden');
+            
+            numpadBtns.forEach(btn => btn.setAttribute('disabled', 'true'));
+        }
+
+        function handleError(hint) {
+            // Visual Shake
+            scaleDisplayContainer.classList.remove('animate-shake');
+            void scaleDisplayContainer.offsetWidth; // Trigger reflow
+            scaleDisplayContainer.classList.add('animate-shake');
+            
+            showChefFeedback("Hesap Hatası!", hint, "error");
+        }
+
+        function showChefFeedback(title, message, type) {
+            chefFeedbackEl.classList.remove('hidden', 'border-[#10B981]', 'border-[#F59E0B]', 'bg-green-50', 'bg-orange-50');
+            chefFeedbackEl.classList.add('animate-pop-in');
+            
+            if (type === 'success') {
+                chefFeedbackEl.classList.add('border-[#10B981]', 'bg-green-50');
+                chefTitleEl.classList.replace('text-[#F59E0B]', 'text-[#10B981]');
+                chefTitleEl.style.color = 'var(--color-green)';
+            } else {
+                chefFeedbackEl.classList.add('border-[#F59E0B]', 'bg-orange-50');
+                chefTitleEl.style.color = 'var(--color-mustard)';
+            }
+
+            chefTitleEl.textContent = title;
+            chefMessageEl.innerHTML = message;
+        }
+
+        function hideChefFeedback() {
+            chefFeedbackEl.classList.add('hidden');
+        }
+
+        function nextProblem() {
+            currentProblemIndex++;
+            loadProblem();
+        }
+
+        function renderStars() {
+            let starsHTML = "";
+            for (let i = 0; i < 6; i++) {
+                if (i < michelinStars) {
+                    starsHTML += '<span>★</span>';
+                } else {
+                    starsHTML += '<span class="text-gray-600">☆</span>';
+                }
+            }
+            starContainerEl.innerHTML = starsHTML;
+        }
+
+        function showEndModal() {
+            document.getElementById('end-modal').classList.remove('hidden');
+        }
+
+        // --- CONVERTER TOOL (SCRATCHPAD) ---
+        function gcd(a, b) {
+            return b ? gcd(b, a % b) : a;
+        }
+
+        function formatFraction(num, den) {
+            const divisor = gcd(Math.abs(num), Math.abs(den));
+            return (num / divisor) + "/" + (den / divisor);
+        }
+
+        function convert(source) {
+            const errorEl = document.getElementById('conv-error');
+            errorEl.classList.add('hidden');
+            
+            let fracInput = document.getElementById('conv-frac');
+            let decInput = document.getElementById('conv-dec');
+            let percInput = document.getElementById('conv-perc');
+
+            let decimalValue = null;
+
+            try {
+                if (source === 'frac') {
+                    const parts = fracInput.value.trim().split('/');
+                    if (parts.length === 2) {
+                        const n = parseFloat(parts[0]);
+                        const d = parseFloat(parts[1]);
+                        if (!isNaN(n) && !isNaN(d) && d !== 0) {
+                            decimalValue = n / d;
+                        } else throw new Error();
+                    } else if (parts.length === 1 && !isNaN(parseFloat(parts[0]))) {
+                        decimalValue = parseFloat(parts[0]);
+                    } else throw new Error();
+                } 
+                else if (source === 'dec') {
+                    let val = decInput.value.trim().replace(',', '.');
+                    decimalValue = parseFloat(val);
+                    if (isNaN(decimalValue)) throw new Error();
+                } 
+                else if (source === 'perc') {
+                    let val = percInput.value.trim().replace(',', '.');
+                    decimalValue = parseFloat(val) / 100;
+                    if (isNaN(decimalValue)) throw new Error();
+                }
+
+                if (decimalValue !== null) {
+                    // Update others
+                    if (source !== 'dec') {
+                        // Max 4 decimals to avoid crazy numbers
+                        decInput.value = parseFloat(decimalValue.toFixed(4)).toString().replace('.', ',');
+                    }
+                    if (source !== 'perc') {
+                        percInput.value = parseFloat((decimalValue * 100).toFixed(2)).toString().replace('.', ',');
+                    }
+                    if (source !== 'frac') {
+                        // Create a base fraction using 100 or 1000 for decimals
+                        let decimals = decimalValue.toString().split('.')[1];
+                        let length = decimals ? decimals.length : 0;
+                        if(length > 4) length = 4; // limit to 10000 denominator
+                        let denominator = Math.pow(10, length);
+                        let numerator = Math.round(decimalValue * denominator);
+                        fracInput.value = formatFraction(numerator, denominator);
+                    }
+                }
+            } catch (e) {
+                errorEl.classList.remove('hidden');
+            }
+        }
+
+        // Keyboard Support
+        window.addEventListener('keydown', (e) => {
+            // Only capture if not typing in converter inputs
+            if(document.activeElement.tagName === "INPUT") return;
+
+            if (e.key >= '0' && e.key <= '9') {
+                inputDigit(e.key);
+            } else if (e.key === ',' || e.key === '.') {
+                inputDigit(',');
+            } else if (e.key === 'Backspace') {
+                scaleInputValue = scaleInputValue.slice(0, -1);
+                updateScaleDisplay();
+            } else if (e.key === 'Enter') {
+                if(!submitBtn.classList.contains('hidden')) {
+                    submitAnswer();
+                } else if(!nextBtn.classList.contains('hidden')) {
+                    nextProblem();
+                }
+            } else if (e.key.toLowerCase() === 'c' || e.key === 'Escape') {
+                clearInput();
+            }
+        });
+
+        // Start
+        window.onload = initGame;
+
+    </script>
+</body>
+</html>
